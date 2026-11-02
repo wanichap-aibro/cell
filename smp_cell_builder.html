@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMP Cell Builder</title>
+  <style>
+    :root{
+      --blue:#39BDFF;
+      --blue-dark:#1786C8;
+      --blue-soft:#EAF8FF;
+      --blue-border:#B9E6FA;
+      --ink:#183B56;
+      --muted:#5F7990;
+      --white:#fff;
+      --green:#DFF7E8;
+      --green-ink:#16784B;
+      --red:#FFE7E7;
+      --red-ink:#BB3D3D;
+      --yellow:#FFF5C8;
+      --shadow:0 10px 24px rgba(23,134,200,.10);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--ink);
+      background:linear-gradient(180deg,#F5FCFF 0%, #FFFFFF 100%);
+    }
+    .wrap{max-width:860px;margin:0 auto;padding:16px 14px 32px;}
+    .hero{
+      background:linear-gradient(135deg,var(--blue) 0%, #7ad7ff 100%);
+      border-radius:28px;
+      padding:22px;
+      color:#fff;
+      box-shadow:var(--shadow);
+      position:relative;overflow:hidden;
+    }
+    .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.18)}
+    .hero::before{width:140px;height:140px;right:-24px;top:-26px}
+    .hero::after{width:100px;height:100px;left:-20px;bottom:-22px}
+    h1{margin:0 0 8px;font-size:30px;line-height:1.15}
+    .sub{margin:0;font-size:15px;line-height:1.65;max-width:700px}
+    .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+    .pill{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);font-size:13px;font-weight:800}
+
+    .card{background:#fff;border:1px solid var(--blue-border);border-radius:24px;box-shadow:var(--shadow);padding:18px;margin-top:16px}
+    .topbar{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+    .section-title{margin:0 0 6px;font-size:22px;color:var(--ink)}
+    .small{font-size:13px;color:var(--muted);line-height:1.65}
+
+    .switches{display:flex;gap:8px;flex-wrap:wrap}
+    .switch{
+      border:none;border-radius:14px;padding:12px 14px;background:#F4FBFF;color:var(--blue-dark);
+      font-weight:800;cursor:pointer;border:1px solid var(--blue-border);
+    }
+    .switch.active{background:var(--blue-dark);color:#fff}
+
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .stat{padding:10px 12px;border-radius:14px;background:#F7FCFF;border:1px solid var(--blue-border);font-size:13px;font-weight:800;color:var(--blue-dark)}
+
+    .grid{display:grid;grid-template-columns:290px 1fr;gap:16px;margin-top:14px;align-items:start}
+    .palette{background:#FBFEFF;border:1px solid var(--blue-border);border-radius:20px;padding:14px}
+    .palette-title{font-size:16px;font-weight:900;color:var(--ink);margin-bottom:6px}
+    .org-list{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+    .organelle{
+      border:2px dashed var(--blue); background:#fff; color:var(--blue-dark); font-weight:800;
+      padding:10px 12px; border-radius:14px; cursor:grab; user-select:none; font-size:14px;
+      transition:.2s ease; touch-action:manipulation;
+    }
+    .organelle:hover{transform:translateY(-1px)}
+    .organelle.selected{background:var(--blue);color:#fff;border-style:solid}
+    .organelle.placed{opacity:.45}
+
+    .canvas-card{background:#FBFEFF;border:1px solid var(--blue-border);border-radius:20px;padding:12px}
+    .canvas-wrap{position:relative;width:100%;min-height:580px}
+    svg{width:100%;height:auto;display:block}
+    .dropzone{fill:rgba(57,189,255,.12);stroke:#39BDFF;stroke-width:2;stroke-dasharray:6 5;cursor:pointer;transition:.2s ease}
+    .dropzone.active{fill:rgba(57,189,255,.20)}
+    .dropzone.correct{fill:rgba(70, 194, 124, .22);stroke:#2AAE66;stroke-dasharray:none}
+    .dropzone.wrong{fill:rgba(255, 107, 107, .18);stroke:#D74F4F;stroke-dasharray:none}
+    .zone-label{font-size:12px;font-weight:900;fill:#4F6D85;pointer-events:none}
+    .zone-answer{font-size:11px;font-weight:900;fill:#123f61;pointer-events:none}
+    .hint-line{stroke:#98BFD7;stroke-width:1.5;stroke-dasharray:4 4}
+    .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+    .dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid #39BDFF;background:rgba(57,189,255,.12)}
+    .dot.correct{border-color:#2AAE66;background:rgba(70,194,124,.22)}
+    .dot.wrong{border-color:#D74F4F;background:rgba(255,107,107,.18)}
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btn{border:none;padding:12px 16px;border-radius:14px;font-weight:900;cursor:pointer;font-size:14px}
+    .btn.primary{background:var(--blue-dark);color:#fff}
+    .btn.secondary{background:#fff;border:1px solid var(--blue-border);color:var(--blue-dark)}
+    .btn.ghost{background:var(--yellow);color:#7B6400}
+
+    .message{display:none;margin-top:12px;padding:14px;border-radius:16px;font-size:14px;line-height:1.7}
+    .message.show{display:block}
+    .message.good{background:var(--green);color:var(--green-ink);border:1px solid #98E0B5}
+    .message.bad{background:var(--red);color:var(--red-ink);border:1px solid #F0B0B0}
+
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+    .info-box{background:#FBFEFF;border:1px solid var(--blue-border);border-radius:18px;padding:14px}
+    .info-box h3{margin:0 0 8px;font-size:17px}
+    .facts{margin:0;padding-left:18px;line-height:1.8;font-size:14px;color:#38516A}
+    .chiprow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .mini{padding:6px 10px;border-radius:999px;background:#EEF9FF;color:var(--blue-dark);font-size:12px;font-weight:800}
+
+    @media (max-width:780px){
+      .grid,.info-grid{grid-template-columns:1fr}
+      .canvas-wrap{min-height:470px}
+      h1{font-size:26px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Cell Builder: ประกอบเซลล์ด้วยตัวเอง</h1>
+      <p class="sub">ลากออร์แกเนลล์ไปวางให้ตรงตำแหน่งใน <b>เซลล์สัตว์</b> หรือ <b>เซลล์พืช</b> แล้วกดตรวจคำตอบเพื่อฝึกจำทั้งโครงสร้างและหน้าที่ของออร์แกเนลล์ เหมาะกับชีววิทยา ม.ปลาย</p>
+      <div class="pillrow">
+        <div class="pill">สลับเซลล์สัตว์ / เซลล์พืช</div>
+        <div class="pill">ลากวางหรือแตะเพื่อเลือก</div>
+        <div class="pill">ตรวจคำตอบ + เฉลย + เก็บ High Score</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="topbar">
+        <div>
+          <h2 class="section-title">ประกอบเซลล์</h2>
+          <div class="small">วิธีเล่น: <b>คลิกเลือกออร์แกเนลล์</b> แล้วคลิกตำแหน่งบนภาพ หรือใช้เมาส์ <b>ลากไปวาง</b> ได้เลย</div>
+        </div>
+        <div class="switches" id="modeSwitch"></div>
+      </div>
+      <div class="stats">
+        <div class="stat">วางถูก: <span id="correctCount">0</span>/<span id="totalCount">0</span></div>
+        <div class="stat">คะแนนล่าสุด: <span id="scoreText">0</span></div>
+        <div class="stat">High Score: <span id="highScoreText">0</span></div>
+      </div>
+
+      <div class="grid">
+        <div class="palette">
+          <div class="palette-title">คลังออร์แกเนลล์</div>
+          <div class="small">ออร์แกเนลล์ที่ถูกใช้แล้วจะจางลง ถ้าอยากเปลี่ยนคำตอบ ให้เลือกออร์แกเนลล์ใหม่แล้วคลิกตำแหน่งเดิม หรือกดรีเซ็ต</div>
+          <div id="orgList" class="org-list"></div>
+          <div class="actions">
+            <button class="btn primary" id="checkBtn">ตรวจคำตอบ</button>
+            <button class="btn secondary" id="resetBtn">เริ่มใหม่</button>
+            <button class="btn ghost" id="revealBtn">เฉลย</button>
+          </div>
+          <div id="message" class="message"></div>
+        </div>
+
+        <div class="canvas-card">
+          <div class="canvas-wrap">
+            <svg id="cellSvg" viewBox="0 0 520 580" aria-label="cell builder canvas"></svg>
+          </div>
+          <div class="legend">
+            <span><i class="dot"></i> ยังไม่ได้ตรวจ</span>
+            <span><i class="dot correct"></i> ถูกต้อง</span>
+            <span><i class="dot wrong"></i> ยังไม่ถูก</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-box">
+          <h3>สิ่งที่น้องจะได้ฝึก</h3>
+          <ul class="facts">
+            <li>จำตำแหน่งและรูปร่างของออร์แกเนลล์ในเซลล์</li>
+            <li>แยกความต่างระหว่าง <b>เซลล์สัตว์</b> และ <b>เซลล์พืช</b></li>
+            <li>เข้าใจหน้าที่ของออร์แกเนลล์ เช่น การสร้างพลังงาน การสังเคราะห์โปรตีน และการเก็บสาร</li>
+          </ul>
+        </div>
+        <div class="info-box">
+          <h3>โครงสร้างที่เด่นของแต่ละเซลล์</h3>
+          <div class="chiprow">
+            <span class="mini">เซลล์สัตว์: ไม่มี cell wall / chloroplast</span>
+            <span class="mini">เซลล์พืช: มี cell wall, chloroplast, central vacuole</span>
+            <span class="mini">ทั้งสองแบบ: nucleus, mitochondria, ribosome, ER, Golgi</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'smp_cell_builder_highscore';
+
+    const datasets = {
+      animal: {
+        label: 'เซลล์สัตว์',
+        viewBox: '0 0 520 580',
+        organelles: [
+          { id:'membrane', name:'Cell membrane', th:'เยื่อหุ้มเซลล์' },
+          { id:'nucleus', name:'Nucleus', th:'นิวเคลียส' },
+          { id:'mitochondrion', name:'Mitochondrion', th:'ไมโทคอนเดรีย' },
+          { id:'golgi', name:'Golgi apparatus', th:'กอลจิบอดี' },
+          { id:'rough_er', name:'Rough ER', th:'เอนโดพลาสมิกเรติคูลัมชนิดหยาบ' },
+          { id:'ribosome', name:'Ribosome', th:'ไรโบโซม' },
+          { id:'lysosome', name:'Lysosome', th:'ไลโซโซม' },
+          { id:'cytoplasm', name:'Cytoplasm', th:'ไซโทพลาซึม' }
+        ],
+        zones: [
+          { id:'membrane', x:84, y:40, w:145, h:40, answer:'membrane', number:1 },
+          { id:'nucleus', x:336, y:123, w:115, h:44, answer:'nucleus', number:2 },
+          { id:'mitochondrion', x:318, y:264, w:120, h:44, answer:'mitochondrion', number:3 },
+          { id:'golgi', x:106, y:316, w:120, h:44, answer:'golgi', number:4 },
+          { id:'rough_er', x:318, y:360, w:138, h:44, answer:'rough_er', number:5 },
+          { id:'ribosome', x:102, y:212, w:112, h:44, answer:'ribosome', number:6 },
+          { id:'lysosome', x:112, y:435, w:112, h:44, answer:'lysosome', number:7 },
+          { id:'cytoplasm', x:316, y:466, w:120, h:44, answer:'cytoplasm', number:8 }
+        ],
+        art: `
+          <defs>
+            <filter id="shadow"><feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="rgba(23,134,200,.12)"/></filter>
+          </defs>
+          <ellipse cx="260" cy="290" rx="210" ry="230" fill="#F7FCFF" stroke="#6CC9F5" stroke-width="8" filter="url(#shadow)"/>
+          <ellipse cx="260" cy="290" rx="194" ry="214" fill="#DFF4FF" opacity="0.95"/>
+          <circle cx="328" cy="170" r="62" fill="#B38BFF" opacity=".55"/>
+          <circle cx="328" cy="170" r="46" fill="#8A5CF6" opacity=".82"/>
+          <circle cx="338" cy="163" r="12" fill="#6F40DA"/>
+          <g>
+            <ellipse cx="350" cy="290" rx="38" ry="20" fill="#FFA95B" stroke="#E38737" stroke-width="4"/>
+            <path d="M325 290 q12 -18 24 0 t24 0" fill="none" stroke="#E38737" stroke-width="3"/>
+          </g>
+          <g>
+            <ellipse cx="164" cy="214" rx="28" ry="18" fill="#97D9FF" stroke="#45AEEA" stroke-width="4"/>
+            <circle cx="156" cy="210" r="3" fill="#1786C8"/>
+            <circle cx="167" cy="218" r="3" fill="#1786C8"/>
+            <circle cx="174" cy="207" r="3" fill="#1786C8"/>
+          </g>
+          <g>
+            <path d="M120 330 c18 -28 44 -26 54 4 c8 24 -4 45 -28 45 c-28 0 -44 -28 -26 -49z" fill="#FF89A8" opacity=".75"/>
+            <path d="M136 312 q20 10 28 24 q-9 18 -29 24" fill="none" stroke="#E04E79" stroke-width="4" stroke-linecap="round"/>
+            <path d="M128 320 q18 8 24 19 q-7 13 -23 18" fill="none" stroke="#E04E79" stroke-width="3" stroke-linecap="round"/>
+          </g>
+          <g>
+            <path d="M360 381 q20 -20 42 -6 q12 7 17 22 q-6 18 -20 23 q-23 8 -39 -15 z" fill="#8FE4C0" opacity=".85"/>
+            <path d="M336 372 q22 -24 48 -14 q20 8 28 28" fill="none" stroke="#33B07A" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="350" cy="364" r="3" fill="#2A9164"/>
+            <circle cx="362" cy="369" r="3" fill="#2A9164"/>
+            <circle cx="375" cy="374" r="3" fill="#2A9164"/>
+          </g>
+          <circle cx="144" cy="450" r="24" fill="#F9E27A" stroke="#DBBB2A" stroke-width="4"/>
+          <circle cx="230" cy="418" r="12" fill="#98E1BF" stroke="#2AAE66" stroke-width="3"/>
+          <circle cx="410" cy="465" r="10" fill="#8AD0FF" stroke="#2E9CD8" stroke-width="3"/>
+          <circle cx="205" cy="260" r="6" fill="#39BDFF" opacity=".7"/>
+          <circle cx="250" cy="125" r="5" fill="#39BDFF" opacity=".7"/>
+          <circle cx="410" cy="210" r="6" fill="#39BDFF" opacity=".7"/>
+          <path class="hint-line" d="M84 80 L105 100" />
+          <path class="hint-line" d="M451 145 L390 160" />
+          <path class="hint-line" d="M438 286 L390 288" />
+          <path class="hint-line" d="M228 337 L176 339" />
+          <path class="hint-line" d="M456 382 L405 384" />
+          <path class="hint-line" d="M214 232 L190 222" />
+          <path class="hint-line" d="M224 457 L168 450" />
+          <path class="hint-line" d="M437 488 L400 472" />
+        `
+      },
+      plant: {
+        label:'เซลล์พืช',
+        viewBox:'0 0 520 580',
+        organelles:[
+          { id:'cell_wall', name:'Cell wall', th:'ผนังเซลล์' },
+          { id:'membrane', name:'Cell membrane', th:'เยื่อหุ้มเซลล์' },
+          { id:'nucleus', name:'Nucleus', th:'นิวเคลียส' },
+          { id:'chloroplast', name:'Chloroplast', th:'คลอโรพลาสต์' },
+          { id:'central_vacuole', name:'Central vacuole', th:'แวคิวโอลขนาดใหญ่' },
+          { id:'mitochondrion', name:'Mitochondrion', th:'ไมโทคอนเดรีย' },
+          { id:'golgi', name:'Golgi apparatus', th:'กอลจิบอดี' },
+          { id:'cytoplasm', name:'Cytoplasm', th:'ไซโทพลาซึม' }
+        ],
+        zones:[
+          { id:'cell_wall', x:72, y:46, w:118, h:40, answer:'cell_wall', number:1 },
+          { id:'membrane', x:72, y:98, w:142, h:40, answer:'membrane', number:2 },
+          { id:'nucleus', x:338, y:109, w:108, h:44, answer:'nucleus', number:3 },
+          { id:'chloroplast', x:338, y:215, w:120, h:44, answer:'chloroplast', number:4 },
+          { id:'central_vacuole', x:336, y:315, w:140, h:44, answer:'central_vacuole', number:5 },
+          { id:'mitochondrion', x:72, y:211, w:120, h:44, answer:'mitochondrion', number:6 },
+          { id:'golgi', x:72, y:322, w:112, h:44, answer:'golgi', number:7 },
+          { id:'cytoplasm', x:74, y:445, w:114, h:44, answer:'cytoplasm', number:8 }
+        ],
+        art:`
+          <rect x="60" y="62" width="400" height="448" rx="34" fill="#D7F6C9" stroke="#6FBF52" stroke-width="10"/>
+          <rect x="85" y="88" width="350" height="395" rx="28" fill="#F7FFF3" stroke="#86D47A" stroke-width="5"/>
+          <rect x="146" y="160" width="210" height="230" rx="40" fill="#C8EFFF" stroke="#79C6EB" stroke-width="5" opacity="0.9"/>
+          <circle cx="345" cy="165" r="42" fill="#B38BFF" opacity=".55"/>
+          <circle cx="345" cy="165" r="31" fill="#8A5CF6" opacity=".82"/>
+          <circle cx="352" cy="162" r="8" fill="#6F40DA"/>
+          <g>
+            <ellipse cx="360" cy="245" rx="33" ry="18" fill="#8FE4C0" stroke="#2AAE66" stroke-width="4"/>
+            <path d="M338 245 q20 -10 44 0" fill="none" stroke="#2AAE66" stroke-width="3"/>
+            <path d="M338 252 q20 -10 44 0" fill="none" stroke="#2AAE66" stroke-width="3"/>
+          </g>
+          <g>
+            <ellipse cx="150" cy="240" rx="34" ry="18" fill="#FFA95B" stroke="#E38737" stroke-width="4"/>
+            <path d="M126 240 q12 -18 24 0 t24 0" fill="none" stroke="#E38737" stroke-width="3"/>
+          </g>
+          <g>
+            <path d="M120 335 c18 -28 44 -26 54 4 c8 24 -4 45 -28 45 c-28 0 -44 -28 -26 -49z" fill="#FF89A8" opacity=".75"/>
+            <path d="M136 317 q20 10 28 24 q-9 18 -29 24" fill="none" stroke="#E04E79" stroke-width="4" stroke-linecap="round"/>
+            <path d="M128 325 q18 8 24 19 q-7 13 -23 18" fill="none" stroke="#E04E79" stroke-width="3" stroke-linecap="round"/>
+          </g>
+          <circle cx="230" cy="138" r="8" fill="#39BDFF" opacity=".7"/>
+          <circle cx="390" cy="355" r="7" fill="#39BDFF" opacity=".7"/>
+          <circle cx="115" cy="430" r="7" fill="#39BDFF" opacity=".7"/>
+          <path class="hint-line" d="M190 67 L124 72" />
+          <path class="hint-line" d="M214 118 L118 112" />
+          <path class="hint-line" d="M446 131 L388 153" />
+          <path class="hint-line" d="M458 238 L392 245" />
+          <path class="hint-line" d="M475 338 L355 338" />
+          <path class="hint-line" d="M192 233 L182 238" />
+          <path class="hint-line" d="M184 344 L164 344" />
+          <path class="hint-line" d="M188 466 L123 434" />
+        `
+      }
+    };
+
+    const modeSwitch = document.getElementById('modeSwitch');
+    const orgList = document.getElementById('orgList');
+    const cellSvg = document.getElementById('cellSvg');
+    const correctCountEl = document.getElementById('correctCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const scoreText = document.getElementById('scoreText');
+    const highScoreText = document.getElementById('highScoreText');
+    const message = document.getElementById('message');
+    const checkBtn = document.getElementById('checkBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const revealBtn = document.getElementById('revealBtn');
+
+    let mode = 'animal';
+    let selectedOrganelle = null;
+    let placements = {};
+    let lastScore = 0;
+
+    function getHighScore(){ return Number(localStorage.getItem(STORAGE_KEY) || 0); }
+    function setHighScore(v){ localStorage.setItem(STORAGE_KEY, String(v)); }
+
+    function renderModeSwitch(){
+      modeSwitch.innerHTML = '';
+      Object.keys(datasets).forEach(key=>{
+        const btn = document.createElement('button');
+        btn.className = 'switch' + (key===mode ? ' active':'');
+        btn.textContent = datasets[key].label;
+        btn.addEventListener('click', ()=>{ mode = key; resetBoard(); renderAll(); });
+        modeSwitch.appendChild(btn);
+      });
+    }
+
+    function renderOrganelleList(){
+      const data = datasets[mode];
+      orgList.innerHTML = '';
+      data.organelles.forEach(item=>{
+        const el = document.createElement('div');
+        el.className = 'organelle';
+        el.draggable = true;
+        el.dataset.id = item.id;
+        el.innerHTML = `${item.name}<br><span style="font-size:12px;font-weight:700;opacity:.85">${item.th}</span>`;
+        if (Object.values(placements).includes(item.id)) el.classList.add('placed');
+        if (selectedOrganelle===item.id) el.classList.add('selected');
+        el.addEventListener('click', ()=>{
+          selectedOrganelle = selectedOrganelle===item.id ? null : item.id;
+          renderOrganelleList();
+          updateZoneActive();
+        });
+        el.addEventListener('dragstart', e=>{
+          e.dataTransfer.setData('text/plain', item.id);
+          selectedOrganelle = item.id;
+          renderOrganelleList();
+        });
+        orgList.appendChild(el);
+      });
+    }
+
+    function zoneAnswerName(id){
+      const data = datasets[mode];
+      const found = data.organelles.find(o=>o.id===id);
+      return found ? found.name : '';
+    }
+
+    function renderCanvas(){
+      const data = datasets[mode];
+      cellSvg.setAttribute('viewBox', data.viewBox);
+      const zoneMarkup = data.zones.map(z=>{
+        const placed = placements[z.id];
+        return `
+          <g class="zone-group" data-zone="${z.id}">
+            <rect class="dropzone" id="zone-${z.id}" x="${z.x}" y="${z.y}" rx="14" ry="14" width="${z.w}" height="${z.h}"></rect>
+            <text class="zone-label" x="${z.x+10}" y="${z.y+17}">ตำแหน่ง ${z.number}</text>
+            ${placed ? `<text class="zone-answer" x="${z.x+10}" y="${z.y+34}">${zoneAnswerName(placed)}</text>` : `<text class="zone-answer" x="${z.x+10}" y="${z.y+34}" fill="#8AA5BA">วางคำตอบที่นี่</text>`}
+          </g>`;
+      }).join('');
+
+      cellSvg.innerHTML = `${data.art}${zoneMarkup}`;
+
+      data.zones.forEach(z=>{
+        const zoneEl = document.getElementById(`zone-${z.id}`);
+        zoneEl.addEventListener('click', ()=>placeSelected(z.id));
+        zoneEl.addEventListener('dragover', e=>{e.preventDefault(); zoneEl.classList.add('active');});
+        zoneEl.addEventListener('dragleave', ()=>zoneEl.classList.remove('active'));
+        zoneEl.addEventListener('drop', e=>{
+          e.preventDefault();
+          zoneEl.classList.remove('active');
+          const id = e.dataTransfer.getData('text/plain');
+          placeOrganelle(id, z.id);
+        });
+      });
+      updateZoneActive();
+    }
+
+    function updateZoneActive(){
+      document.querySelectorAll('.dropzone').forEach(el=>{
+        el.classList.toggle('active', !!selectedOrganelle);
+      });
+    }
+
+    function placeSelected(zoneId){
+      if (!selectedOrganelle) return;
+      placeOrganelle(selectedOrganelle, zoneId);
+    }
+
+    function placeOrganelle(orgId, zoneId){
+      // remove organelle from previous zone if used elsewhere
+      for (const key in placements){
+        if (placements[key]===orgId) delete placements[key];
+      }
+      placements[zoneId] = orgId;
+      selectedOrganelle = null;
+      clearMessage();
+      renderOrganelleList();
+      renderCanvas();
+      updateCountPreview();
+    }
+
+    function clearMessage(){
+      message.className = 'message';
+      message.textContent = '';
+    }
+
+    function updateCountPreview(){
+      const total = datasets[mode].zones.length;
+      let currentCorrect = 0;
+      datasets[mode].zones.forEach(z=>{
+        if (placements[z.id] && placements[z.id]===z.answer) currentCorrect++;
+      });
+      correctCountEl.textContent = currentCorrect;
+      totalCountEl.textContent = total;
+      scoreText.textContent = lastScore;
+      highScoreText.textContent = getHighScore();
+    }
+
+    function checkAnswers(){
+      const data = datasets[mode];
+      let correct = 0;
+      data.zones.forEach(z=>{
+        const zoneEl = document.getElementById(`zone-${z.id}`);
+        zoneEl.classList.remove('wrong','correct');
+        if (placements[z.id]===z.answer){
+          zoneEl.classList.add('correct');
+          correct++;
+        }else{
+          zoneEl.classList.add('wrong');
+        }
+      });
+      lastScore = Math.round((correct / data.zones.length) * 100);
+      if (lastScore > getHighScore()) setHighScore(lastScore);
+      updateCountPreview();
+
+      if (correct === data.zones.length){
+        message.className = 'message show good';
+        message.innerHTML = `<b>เยี่ยมมาก 🎉</b> น้องวางออร์แกเนลล์ถูกครบทุกตำแหน่งแล้ว ได้คะแนน <b>${lastScore}</b> / 100`;
+      } else {
+        message.className = 'message show bad';
+        message.innerHTML = `<b>ได้ ${correct} จาก ${data.zones.length} ตำแหน่ง</b><br>คะแนนรอบนี้ <b>${lastScore}</b> / 100<br>ลองสังเกตลักษณะของแต่ละออร์แกเนลล์ แล้วจัดวางใหม่ได้เลย`;
+      }
+    }
+
+    function revealAnswers(){
+      const data = datasets[mode];
+      placements = {};
+      data.zones.forEach(z=> placements[z.id] = z.answer);
+      lastScore = 100;
+      if (lastScore > getHighScore()) setHighScore(lastScore);
+      renderOrganelleList();
+      renderCanvas();
+      updateCountPreview();
+      document.querySelectorAll('.dropzone').forEach(el=>el.classList.add('correct'));
+      message.className = 'message show good';
+      message.innerHTML = `<b>เฉลยแล้ว</b><br>น้องสามารถใช้หน้าจอนี้ทบทวนตำแหน่งของออร์แกเนลล์ใน${datasets[mode].label}ได้เลย`;
+    }
+
+    function resetBoard(){
+      placements = {};
+      selectedOrganelle = null;
+      lastScore = 0;
+      clearMessage();
+    }
+
+    function renderAll(){
+      renderModeSwitch();
+      renderOrganelleList();
+      renderCanvas();
+      updateCountPreview();
+    }
+
+    checkBtn.addEventListener('click', checkAnswers);
+    resetBtn.addEventListener('click', ()=>{ resetBoard(); renderAll(); });
+    revealBtn.addEventListener('click', revealAnswers);
+
+    renderAll();
+  </script>
+</body>
+</html>
